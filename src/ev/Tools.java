@@ -5,10 +5,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -21,8 +20,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.Axis;
-import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.data.category.IntervalCategoryDataset;
@@ -192,7 +189,7 @@ public class Tools {
 			ie.printStackTrace();
 		}
 	}
-
+	
 	public static void drawGanttChart(String file, ArrayList<ChargingPlan> plans) {
 		IntervalCategoryDataset dataset = createDataset(plans);
 		JFreeChart chart = ChartFactory.createGanttChart("EV Charging Schedule", "EV", "Charging time", dataset, false,
@@ -219,16 +216,54 @@ public class Tools {
 	private static IntervalCategoryDataset createDataset(ArrayList<ChargingPlan> plans) {
 		final TaskSeries s1 = new TaskSeries("SCHEDULE");
 		for (ChargingPlan plan : plans) {
-////			int minutes = Float.valueOf((plan.ev.start - Float.valueOf(plan.ev.start).intValue()) * 60).intValue();
-////			Calendar calendar = Calendar.getInstance();
-////			calendar.set(Calendar.HOUR_OF_DAY, Float.valueOf(plan.ev.start).intValue());
-////			calendar.set(Calendar.MINUTE, minutes);
-////			System.out.println(calendar.getTime());
-//			Date d1 = calendar.getTime();
-//			Date d2 = new Date((d1.getTime() + plan.ev.chargingDuration * 60 * 1000));
 			Task t1 = new Task(String.valueOf(plan.ev.id), plan.ev.getStartDate(), plan.ev.getChargingFinishDate());
-//			t1.setDescription(plan.charging.id+"");
+//			t1.setPercentComplete(0.1*plan.charging.id);
 			s1.add(t1);
+		}
+		final TaskSeriesCollection collection = new TaskSeriesCollection();
+		collection.add(s1);
+		return collection;
+	}
+
+	public static void drawGanttChart2(String file, ArrayList<ChargingPlan> plans) {
+		IntervalCategoryDataset dataset = createDataset2(plans);
+		JFreeChart chart = ChartFactory.createGanttChart("EV Charging Schedule", "Charging Port", "Charging time", dataset, false,
+				false, false);
+		CategoryPlot plot = chart.getCategoryPlot();
+		DateAxis da = (DateAxis) plot.getRangeAxis(0);
+		da.setDateFormatOverride(new SimpleDateFormat("HH:mm"));
+
+		FileOutputStream fop = null;
+		try {
+			fop = new FileOutputStream(file);
+			ChartUtilities.writeChartAsJPEG(fop, 1f, chart, 3000, 600, null);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				fop.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private static IntervalCategoryDataset createDataset2(ArrayList<ChargingPlan> plans) {
+		final TaskSeries s1 = new TaskSeries("SCHEDULE");
+		HashMap<Integer, Task> charging = new HashMap<Integer, Task>();
+		for (ChargingPlan plan : plans) {		
+			if(!charging.containsKey(plan.charging.id)) {
+				Task t1 = new Task(String.valueOf(plan.charging.id), plan.ev.getStartDate(), plan.ev.getChargingFinishDate());
+				t1.setPercentComplete(0.1);
+				charging.put(plan.charging.id, t1);
+			} else {
+				Task t1 = new Task(String.valueOf(plan.charging.id), plan.ev.getStartDate(), plan.ev.getChargingFinishDate());
+				t1.setPercentComplete(0.1);
+				charging.get(plan.charging.id).addSubtask(t1);
+			}
+		}
+		for(Task t: charging.values()) {
+			s1.add(t);
 		}
 		final TaskSeriesCollection collection = new TaskSeriesCollection();
 		collection.add(s1);

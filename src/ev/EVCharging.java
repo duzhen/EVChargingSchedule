@@ -76,6 +76,7 @@ public class EVCharging {
 		});
 		Tools.writeResults(file, chargingPlan);
 		Tools.drawGanttChart("gantt.jpg", chargingPlan);
+		Tools.drawGanttChart2("gantt2.jpg", chargingPlan);
 //		for(int i=0;i<evs.size()-1;i++) {
 //			ArrayList<EV> ev1 = new ArrayList<EV>(evs.subList(0, i));
 //			ArrayList<EV> ev2 = new ArrayList<EV>(evs.subList(i, evs.size()-1));
