@@ -154,7 +154,7 @@ public class EVCharging {
 						min = (ev.mile/c.chargingSpeed[ev.type-1])/60;
 //						break;
 					}
-				} else if(c.freeTime + (ev.mile/c.chargingSpeed[ev.type-1])/60 < ev.finish) {
+				} else if(c.freeTime >= ev.start && c.freeTime + (ev.mile/c.chargingSpeed[ev.type-1])/60 < ev.finish) {
 					if((ev.mile/c.chargingSpeed[ev.type-1])/60 < min) {
 						charging = c;
 						method = 2;
