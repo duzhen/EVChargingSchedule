@@ -184,7 +184,7 @@ public class EVCharging {
 	}
 	
 	public static void main(String[] args) {
-		String file = "res/test data3.xlsx";
+		String file = "res/data_final_2.xlsx";
 		EVCharging ec = new EVCharging(file);
 		ec.start(file);
 	}

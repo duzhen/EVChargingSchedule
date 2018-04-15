@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -191,6 +192,16 @@ public class Tools {
 	}
 	
 	public static void drawGanttChart(String file, ArrayList<ChargingPlan> plans) {
+		ArrayList<Integer> evs = new ArrayList<Integer>();
+		ArrayList<Integer> chargings = new ArrayList<Integer>();
+		for (ChargingPlan plan : plans) {
+			if(!evs.contains(plan.ev.id)) {
+				evs.add(plan.ev.id);
+			}
+			if(!chargings.contains(plan.charging.id)) {
+				chargings.add(plan.charging.id);
+			}
+		}
 		IntervalCategoryDataset dataset = createDataset(plans);
 		JFreeChart chart = ChartFactory.createGanttChart("EV Charging Schedule", "EV", "Charging time", dataset, false,
 				false, false);
@@ -201,7 +212,7 @@ public class Tools {
 		FileOutputStream fop = null;
 		try {
 			fop = new FileOutputStream(file);
-			ChartUtilities.writeChartAsJPEG(fop, 1f, chart, 1000, 2000, null);
+			ChartUtilities.writeChartAsJPEG(fop, 1f, chart, 200*chargings.size(), 50*evs.size(), null);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -226,6 +237,16 @@ public class Tools {
 	}
 
 	public static void drawGanttChart2(String file, ArrayList<ChargingPlan> plans) {
+		ArrayList<Integer> evs = new ArrayList<Integer>();
+		ArrayList<Integer> chargings = new ArrayList<Integer>();
+		for (ChargingPlan plan : plans) {
+			if(!evs.contains(plan.ev.id)) {
+				evs.add(plan.ev.id);
+			}
+			if(!chargings.contains(plan.charging.id)) {
+				chargings.add(plan.charging.id);
+			}
+		}
 		IntervalCategoryDataset dataset = createDataset2(plans);
 		JFreeChart chart = ChartFactory.createGanttChart("EV Charging Schedule", "Charging Port", "Charging time", dataset, false,
 				false, false);
@@ -236,7 +257,7 @@ public class Tools {
 		FileOutputStream fop = null;
 		try {
 			fop = new FileOutputStream(file);
-			ChartUtilities.writeChartAsJPEG(fop, 1f, chart, 3000, 600, null);
+			ChartUtilities.writeChartAsJPEG(fop, 1f, chart, 50*evs.size(), 100*chargings.size(), null);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -248,13 +269,39 @@ public class Tools {
 		}
 	}
 
+	private static ChargingPlan getLastChargingOnThisPort(int id, ArrayList<ChargingPlan> plans) {
+		ChargingPlan p = null;
+		for (ChargingPlan plan : plans) {
+			if(plan.charging.id==id) {
+				p = plan;
+			} else {
+				if(p!=null)
+					break;
+			}
+		}
+		return p;
+	}
 	private static IntervalCategoryDataset createDataset2(ArrayList<ChargingPlan> plans) {
+		plans.sort(new Comparator<ChargingPlan>( ) {
+
+			@Override
+			public int compare(ChargingPlan arg0, ChargingPlan arg1) {
+				if(arg0.charging.id - arg1.charging.id != 0) {
+					return arg0.charging.id - arg1.charging.id;
+				}
+				return (int)((arg0.ev.start - arg1.ev.start)*100);
+			}
+			
+		});
 		final TaskSeries s1 = new TaskSeries("SCHEDULE");
 		HashMap<Integer, Task> charging = new HashMap<Integer, Task>();
-		for (ChargingPlan plan : plans) {		
+		for (ChargingPlan plan : plans) {
 			if(!charging.containsKey(plan.charging.id)) {
-				Task t1 = new Task(String.valueOf(plan.charging.id), plan.ev.getStartDate(), plan.ev.getChargingFinishDate());
-				t1.setPercentComplete(0.1);
+				ChargingPlan p = getLastChargingOnThisPort(plan.charging.id, plans);
+				Task sub = new Task(String.valueOf(plan.charging.id), plan.ev.getStartDate(), plan.ev.getChargingFinishDate());
+				Task t1 = new Task(String.valueOf(plan.charging.id), plan.ev.getStartDate(), p.ev.getChargingFinishDate());
+				sub.setPercentComplete(0.1);
+				t1.addSubtask(sub);
 				charging.put(plan.charging.id, t1);
 			} else {
 				Task t1 = new Task(String.valueOf(plan.charging.id), plan.ev.getStartDate(), plan.ev.getChargingFinishDate());

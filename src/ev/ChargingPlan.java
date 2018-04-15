@@ -8,5 +8,9 @@ public class ChargingPlan {
 		this.ev = ev;
 		this.charging = charging;
 	}
-
+	@Override
+	public String toString() {
+		return "ChargingPlan [ev=" + ev + ", charging=" + charging + "]";
+	}
+	
 }
